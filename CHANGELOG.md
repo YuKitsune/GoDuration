@@ -12,10 +12,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Changed
 
 - All packages target `netstandard2.0`, `net8.0`, and `net10.0`.
-- `GoDuration` and `GoDuration.SystemTextJson` are AOT-compatible on `net8.0`
-  and later.
-- The release bundle zip contains one folder per target framework for each
-  package.
+- `GoDuration` and `GoDuration.SystemTextJson` are AOT-compatible on `net8.0` and later.
+- The release bundle zip contains one folder per target framework for each package.
 
 ## [0.1.0] - 2026-08-27
 
@@ -25,5 +23,4 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `GoDuration.SystemTextJson` package. `TimeSpan` converter for `System.Text.Json`.
 - `GoDuration.NewtonsoftJson` package. `TimeSpan` converter for `Newtonsoft.Json`.
 - `GoDuration.YamlDotNet` package. `TimeSpan` type converter for `YamlDotNet`.
-- `DurationFormatOptions` for the format output. Options: `OmitZeroUnits`,
-  `IncludePositiveSign`, and `MicrosecondSymbol`.
+- `DurationFormatOptions` for the format output. Options: `OmitZeroUnits`, `IncludePositiveSign`, and `MicrosecondSymbol`.
