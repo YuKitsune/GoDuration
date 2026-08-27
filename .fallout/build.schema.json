@@ -123,7 +123,7 @@
         },
         "NuGetApiKey": {
           "type": "string",
-          "description": "NuGet API key. Set the NUGET_API_KEY secret in CI",
+          "description": "NuGet API key. In CI this is minted per-run by NuGet trusted publishing (NuGet/login)",
           "default": "Secrets must be entered via 'fallout :secrets [profile]'"
         },
         "NuGetSource": {

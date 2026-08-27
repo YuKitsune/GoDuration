@@ -41,7 +41,7 @@ string text = Duration.Format(TimeSpan.FromHours(1), options);
 
 ## Build
 
-The build uses [Fallout](https://github.com/nuke-build/nuke). Run one of the
+The build uses [Fallout](https://fallout.build). Run one of the
 scripts at the repository root:
 
 ```bash
