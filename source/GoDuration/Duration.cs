@@ -44,12 +44,13 @@ public static class Duration
     }
 
     /// <summary>
-    /// Renders <paramref name="value"/> as a Go-style duration string, matching the
-    /// output of Go's <c>time.Duration.String()</c>. Sub-tick precision (below 100 ns)
-    /// is not representable by <see cref="TimeSpan"/> and is lost during parsing;
-    /// values that survive parsing round-trip exactly through Format.
+    /// Renders <paramref name="value"/> as a Go-style duration string. With the default
+    /// <paramref name="options"/> the output matches Go's <c>time.Duration.String()</c>.
+    /// Sub-tick precision (below 100 ns) is not representable by <see cref="TimeSpan"/>
+    /// and is lost during parsing; values that survive parsing round-trip exactly through
+    /// Format.
     /// </summary>
-    public static string Format(TimeSpan value)
+    public static string Format(TimeSpan value, DurationFormatOptions options = default)
     {
         var ticks = value.Ticks;
         if (ticks == 0)
@@ -64,16 +65,18 @@ public static class Duration
         var sb = new StringBuilder();
         if (negative)
             sb.Append('-');
+        else if (options.IncludePositiveSign)
+            sb.Append('+');
 
         if (u < (ulong)TimeSpan.TicksPerSecond)
-            FormatSubSecond(sb, u);
+            FormatSubSecond(sb, u, options);
         else
-            FormatSecondsAndAbove(sb, u);
+            FormatSecondsAndAbove(sb, u, options);
 
         return sb.ToString();
     }
 
-    private static void FormatSubSecond(StringBuilder sb, ulong ticks)
+    private static void FormatSubSecond(StringBuilder sb, ulong ticks, DurationFormatOptions options)
     {
         if (ticks < 10) // < 1 µs
         {
@@ -82,7 +85,7 @@ public static class Duration
         else if (ticks < 10_000) // < 1 ms
         {
             AppendWithFraction(sb, ticks * 100, prec: 3);
-            sb.Append("µs");
+            sb.Append(options.MicrosecondSymbol == MicrosecondSymbol.Ascii ? "us" : "µs");
         }
         else // < 1 s
         {
@@ -91,7 +94,7 @@ public static class Duration
         }
     }
 
-    private static void FormatSecondsAndAbove(StringBuilder sb, ulong ticks)
+    private static void FormatSecondsAndAbove(StringBuilder sb, ulong ticks, DurationFormatOptions options)
     {
         var wholeSeconds = ticks / (ulong)TimeSpan.TicksPerSecond;
         var fracTicks = ticks % (ulong)TimeSpan.TicksPerSecond;
@@ -102,15 +105,30 @@ public static class Duration
         var minutes = afterHours / 60;
         var seconds = afterHours % 60;
 
-        if (hours > 0)
-            sb.Append(hours).Append('h');
-        if (hours > 0 || minutes > 0)
-            sb.Append(minutes).Append('m');
+        // Base Go rules: hours only when non-zero, minutes when hours or minutes non-zero,
+        // seconds always.
+        var showHours = hours > 0;
+        var showMinutes = hours > 0 || minutes > 0;
+        var showSeconds = true;
 
-        sb.Append(seconds);
-        if (fracNs > 0)
-            AppendFractionalDigits(sb, fracNs, prec: 9);
-        sb.Append('s');
+        if (options.OmitZeroUnits)
+        {
+            if (hours == 0) showHours = false;
+            if (minutes == 0) showMinutes = false;
+            if (seconds == 0 && fracNs == 0) showSeconds = false;
+        }
+
+        if (showHours)
+            sb.Append(hours).Append('h');
+        if (showMinutes)
+            sb.Append(minutes).Append('m');
+        if (showSeconds)
+        {
+            sb.Append(seconds);
+            if (fracNs > 0)
+                AppendFractionalDigits(sb, fracNs, prec: 9);
+            sb.Append('s');
+        }
     }
 
     private static void AppendWithFraction(StringBuilder sb, ulong value, int prec)
