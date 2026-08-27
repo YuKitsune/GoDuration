@@ -60,7 +60,8 @@ public static class Duration
     /// </exception>
     public static TimeSpan Parse(string input)
     {
-        ArgumentNullException.ThrowIfNull(input);
+        if (input is null)
+            throw new ArgumentNullException(nameof(input));
 
         if (!TryParseCore(input, out var result, out var error))
             throw new FormatException(error);
@@ -146,10 +147,10 @@ public static class Duration
                 return false;
             }
 
-            var unit = span[unitStart..i];
+            var unit = span.Slice(unitStart, i - unitStart);
             if (!TryMapUnit(unit, out var unitTicks))
             {
-                error = $"unknown unit \"{unit}\" in duration \"{input}\"";
+                error = $"unknown unit \"{unit.ToString()}\" in duration \"{input}\"";
                 return false;
             }
 
@@ -200,7 +201,12 @@ public static class Duration
         if (!hasIntegerDigits && !hasFractionDigits)
             return false;
 
-        return double.TryParse(input[start..i], NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+        var numberSlice = input.Slice(start, i - start);
+#if NETSTANDARD2_0
+        return double.TryParse(numberSlice.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+#else
+        return double.TryParse(numberSlice, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+#endif
     }
 
     private static bool TryMapUnit(ReadOnlySpan<char> unit, out double ticksPerUnit)
@@ -374,7 +380,7 @@ public static class Duration
     private static void AppendFractionalDigits(StringBuilder sb, ulong frac, int prec)
     {
         Span<char> buf = stackalloc char[9];
-        var slice = buf[..prec];
+        var slice = buf.Slice(0, prec);
         var v = frac;
         for (var i = prec - 1; i >= 0; i--)
         {
@@ -387,6 +393,11 @@ public static class Duration
             end--;
 
         sb.Append('.');
-        sb.Append(slice[..end]);
+        var trimmed = slice.Slice(0, end);
+#if NETSTANDARD2_0
+        sb.Append(trimmed.ToString());
+#else
+        sb.Append(trimmed);
+#endif
     }
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>GoDuration.SystemTextJson</RootNamespace>
@@ -9,6 +9,19 @@
     <Description>System.Text.Json TimeSpan converter that reads and writes Go-style duration strings (e.g. "300ms", "1h30m") through the GoDuration parser and formatter.</Description>
     <PackageTags>go golang duration timespan json system.text.json converter</PackageTags>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net10.0'">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!--
+    System.Text.Json is bundled with net8.0 and net10.0. netstandard2.0 consumers need
+    the standalone package. The pin tracks .NET 8 LTS, so netstandard2.0 consumers
+    receive security fixes for the LTS window without a floating upper bound.
+  -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GoDuration\GoDuration.csproj" />

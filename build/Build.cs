@@ -13,6 +13,7 @@ using static Fallout.Common.Tools.DotNet.DotNetTasks;
 [GitHubActions(
     "ci",
     GitHubActionsImage.UbuntuLatest,
+    AutoGenerate = false,
     OnPushBranches = new[] { "main" },
     OnPullRequestBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Test) },
@@ -39,6 +40,13 @@ class Build : FalloutBuild
         "GoDuration.SystemTextJson",
         "GoDuration.NewtonsoftJson",
         "GoDuration.YamlDotNet",
+    };
+
+    static readonly string[] PackageTargetFrameworks =
+    {
+        "netstandard2.0",
+        "net8.0",
+        "net10.0",
     };
 
     AbsolutePath SourceDirectory => RootDirectory / "source";
@@ -147,12 +155,16 @@ class Build : FalloutBuild
             foreach (var name in PackableProjectNames)
             {
                 var project = Solution.GetProject(name);
-                var output = stage / name;
-                DotNetPublish(s => s
-                    .SetProject(project)
-                    .SetConfiguration(Configuration)
-                    .SetOutput(output)
-                    .EnableNoRestore());
+                foreach (var tfm in PackageTargetFrameworks)
+                {
+                    var output = stage / name / tfm;
+                    DotNetPublish(s => s
+                        .SetProject(project)
+                        .SetConfiguration(Configuration)
+                        .SetFramework(tfm)
+                        .SetOutput(output)
+                        .EnableNoRestore());
+                }
             }
 
             var zipPath = ReleaseDirectory / $"GoDuration-{PackageVersion}.zip";
