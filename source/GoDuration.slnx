@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="GoDuration/GoDuration.csproj" />
+  <Project Path="GoDuration.Tests/GoDuration.Tests.csproj" />
+  <Project Path="../build/_build.csproj">
+    <Build Project="false" />
+  </Project>
+</Solution>
