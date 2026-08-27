@@ -1,8 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
-using Superpower;
-using Superpower.Parsers;
 
 namespace GoDuration;
 
@@ -30,17 +28,106 @@ public static class Duration
         if (string.IsNullOrEmpty(input))
             return false;
 
+        return TryParseSpan(input.AsSpan(), out result);
+    }
+
+    private static bool TryParseSpan(ReadOnlySpan<char> input, out TimeSpan result)
+    {
+        result = TimeSpan.Zero;
+
+        var i = 0;
+        var sign = 1;
+        if (input[0] == '+') { i = 1; }
+        else if (input[0] == '-') { sign = -1; i = 1; }
+
+        if (i == input.Length)
+            return false;
+
+        // Go accepts a bare "0" (with no unit) as zero.
+        if (input.Length - i == 1 && input[i] == '0')
+            return true;
+
+        var totalTicks = 0d;
+        var anySegment = false;
+        while (i < input.Length)
+        {
+            if (!TryReadNumber(input, ref i, out var number))
+                return false;
+            if (!TryReadUnit(input, ref i, out var unitTicks))
+                return false;
+            totalTicks += number * unitTicks;
+            anySegment = true;
+        }
+
+        if (!anySegment)
+            return false;
+
         try
         {
-            var parsed = DurationParser.TryParse(input);
-            if (!parsed.HasValue || !parsed.Remainder.IsAtEnd)
-                return false;
-            
-            result = parsed.Value;
+            result = TimeSpan.FromTicks(checked((long)Math.Round(sign * totalTicks)));
             return true;
         }
         catch (OverflowException) { return false; }
-        catch (ArgumentOutOfRangeException) { return false; }
+    }
+
+    private static bool TryReadNumber(ReadOnlySpan<char> input, ref int i, out double value)
+    {
+        value = 0d;
+        var start = i;
+
+        while (i < input.Length && (uint)(input[i] - '0') <= 9)
+            i++;
+        var hasIntegerDigits = i > start;
+
+        var hasDot = false;
+        var fractionStart = i;
+        if (i < input.Length && input[i] == '.')
+        {
+            hasDot = true;
+            i++;
+            fractionStart = i;
+            while (i < input.Length && (uint)(input[i] - '0') <= 9)
+                i++;
+        }
+        var hasFractionDigits = hasDot && i > fractionStart;
+
+        if (!hasIntegerDigits && !hasFractionDigits)
+            return false;
+
+        return double.TryParse(input[start..i], NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static bool TryReadUnit(ReadOnlySpan<char> input, ref int i, out double ticksPerUnit)
+    {
+        ticksPerUnit = 0d;
+        var remaining = input.Length - i;
+        if (remaining <= 0)
+            return false;
+
+        if (remaining >= 2)
+        {
+            var c0 = input[i];
+            var c1 = input[i + 1];
+            if (c1 == 's')
+            {
+                switch (c0)
+                {
+                    case 'n': ticksPerUnit = 0.01d; i += 2; return true;
+                    case 'u': ticksPerUnit = 10d; i += 2; return true;
+                    case 'µ': ticksPerUnit = 10d; i += 2; return true; // µs
+                    case 'μ': ticksPerUnit = 10d; i += 2; return true; // μs
+                    case 'm': ticksPerUnit = 10_000d; i += 2; return true;
+                }
+            }
+        }
+
+        switch (input[i])
+        {
+            case 's': ticksPerUnit = 10_000_000d; i++; return true;
+            case 'm': ticksPerUnit = 600_000_000d; i++; return true;
+            case 'h': ticksPerUnit = 36_000_000_000d; i++; return true;
+            default: return false;
+        }
     }
 
     /// <summary>
@@ -163,58 +250,4 @@ public static class Duration
         sb.Append('.');
         sb.Append(slice[..end]);
     }
-
-    private static readonly TextParser<int> Sign =
-        Character.EqualTo('+').Value(1)
-            .Or(Character.EqualTo('-').Value(-1))
-            .OptionalOrDefault(1);
-
-    // ".5" — dot followed by at least one digit.
-    private static readonly TextParser<double> FractionOnly =
-        from _ in Character.EqualTo('.')
-        from digits in Character.Digit.AtLeastOnce()
-        select double.Parse("." + new string(digits), CultureInfo.InvariantCulture);
-
-    // "1", "1.", "1.5" — leading digits, optional dot with optional trailing digits.
-    private static readonly TextParser<double> IntegerWithOptionalFraction =
-        from before in Character.Digit.AtLeastOnce()
-        from after in (
-                from _ in Character.EqualTo('.')
-                from d in Character.Digit.Many()
-                select "." + new string(d)
-            ).OptionalOrDefault(string.Empty)
-        select double.Parse(new string(before) + after, CultureInfo.InvariantCulture);
-
-    private static readonly TextParser<double> Number =
-        FractionOnly.Try().Or(IntegerWithOptionalFraction);
-
-    // A TimeSpan tick is 100 nanoseconds. Values are kept as double so that
-    // fractional units (e.g. "0.5ms") do not lose precision until the final cast.
-    // Multi-char units get .Try() so a partial match (e.g. "ms" against "m45s")
-    // backtracks and lets the shorter alternative be tried.
-    private static readonly TextParser<double> UnitTicks =
-        Span.EqualTo("ns").Try().Value(0.01d)
-            .Or(Span.EqualTo("us").Try().Value(10d))
-            .Or(Span.EqualTo("µs").Try().Value(10d)) // µs (U+00B5)
-            .Or(Span.EqualTo("μs").Try().Value(10d)) // μs (U+03BC)
-            .Or(Span.EqualTo("ms").Try().Value(10_000d))
-            .Or(Span.EqualTo("s").Value(10_000_000d))
-            .Or(Span.EqualTo("m").Value(600_000_000d))
-            .Or(Span.EqualTo("h").Value(36_000_000_000d));
-
-    private static readonly TextParser<double> Segment =
-        from num in Number
-        from unit in UnitTicks
-        select num * unit;
-
-    private static readonly TextParser<double> Segments =
-        Segment.Try().AtLeastOnce().Select(s => s.Sum());
-
-    private static readonly TextParser<double> BareZero =
-        Character.EqualTo('0').Value(0d);
-
-    private static readonly TextParser<TimeSpan> DurationParser =
-        from sign in Sign
-        from ticks in Segments.Try().Or(BareZero)
-        select TimeSpan.FromTicks(checked((long)Math.Round(sign * ticks)));
 }
