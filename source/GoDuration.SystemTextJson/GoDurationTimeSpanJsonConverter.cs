@@ -6,9 +6,23 @@ namespace GoDuration.SystemTextJson;
 /// <summary>
 /// System.Text.Json converter that reads and writes <see cref="TimeSpan"/> values
 /// as Go-style duration strings. Only JSON string tokens are accepted on read.
+/// The <see cref="DurationFormatOptions"/> passed to the constructor control the
+/// write-side formatting; parsing is single-mode.
 /// </summary>
 public sealed class GoDurationTimeSpanJsonConverter : JsonConverter<TimeSpan>
 {
+    private readonly DurationFormatOptions _formatOptions;
+
+    public GoDurationTimeSpanJsonConverter()
+        : this(DurationFormatOptions.Default)
+    {
+    }
+
+    public GoDurationTimeSpanJsonConverter(DurationFormatOptions formatOptions)
+    {
+        _formatOptions = formatOptions;
+    }
+
     public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType != JsonTokenType.String)
@@ -30,6 +44,6 @@ public sealed class GoDurationTimeSpanJsonConverter : JsonConverter<TimeSpan>
 
     public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
     {
-        writer.WriteStringValue(Duration.Format(value));
+        writer.WriteStringValue(Duration.Format(value, _formatOptions));
     }
 }

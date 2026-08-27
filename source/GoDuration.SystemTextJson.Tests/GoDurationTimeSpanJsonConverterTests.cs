@@ -66,4 +66,36 @@ public class GoDurationTimeSpanJsonConverterTests
         var back = JsonSerializer.Deserialize<Config>(json, Options)!;
         Assert.Equal(original.Timeout, back.Timeout);
     }
+
+    // --- Format options plumbed through the converter --------------------------
+
+    [Fact]
+    public void Serialize_HonoursOmitZeroUnits()
+    {
+        var options = new JsonSerializerOptions
+        {
+            Converters =
+            {
+                new GoDurationTimeSpanJsonConverter(new DurationFormatOptions { OmitZeroUnits = true })
+            }
+        };
+
+        var json = JsonSerializer.Serialize(TimeSpan.FromHours(1), options);
+        Assert.Equal("\"1h\"", json);
+    }
+
+    [Fact]
+    public void Serialize_HonoursIncludePositiveSign()
+    {
+        var options = new JsonSerializerOptions
+        {
+            Converters =
+            {
+                new GoDurationTimeSpanJsonConverter(new DurationFormatOptions { IncludePositiveSign = true })
+            }
+        };
+
+        var json = JsonSerializer.Serialize(TimeSpan.FromSeconds(1), options);
+        Assert.Equal("\"+1s\"", json);
+    }
 }

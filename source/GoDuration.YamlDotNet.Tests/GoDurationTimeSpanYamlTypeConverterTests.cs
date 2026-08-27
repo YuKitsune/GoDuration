@@ -59,4 +59,28 @@ public class GoDurationTimeSpanYamlTypeConverterTests
         var back = BuildDeserializer().Deserialize<Config>(yaml);
         Assert.Equal(original.Timeout, back.Timeout);
     }
+
+    // --- Format options plumbed through the converter --------------------------
+
+    [Fact]
+    public void Serialize_HonoursOmitZeroUnits()
+    {
+        var serializer = new SerializerBuilder()
+            .WithTypeConverter(new GoDurationTimeSpanYamlTypeConverter(new DurationFormatOptions { OmitZeroUnits = true }))
+            .Build();
+
+        var yaml = serializer.Serialize(TimeSpan.FromHours(1)).TrimEnd('\r', '\n');
+        Assert.Equal("1h", yaml);
+    }
+
+    [Fact]
+    public void Serialize_HonoursIncludePositiveSign()
+    {
+        var serializer = new SerializerBuilder()
+            .WithTypeConverter(new GoDurationTimeSpanYamlTypeConverter(new DurationFormatOptions { IncludePositiveSign = true }))
+            .Build();
+
+        var yaml = serializer.Serialize(TimeSpan.FromSeconds(1)).TrimEnd('\r', '\n');
+        Assert.Equal("+1s", yaml);
+    }
 }
