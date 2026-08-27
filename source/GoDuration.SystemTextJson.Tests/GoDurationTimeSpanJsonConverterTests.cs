@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -87,8 +88,11 @@ public class GoDurationTimeSpanJsonConverterTests
     [Fact]
     public void Serialize_HonoursIncludePositiveSign()
     {
+        // The default System.Text.Json encoder escapes the plus sign for HTML safety.
+        // Use the relaxed encoder so the plus sign stays literal in the output.
         var options = new JsonSerializerOptions
         {
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
             Converters =
             {
                 new GoDurationTimeSpanJsonConverter(new DurationFormatOptions { IncludePositiveSign = true })

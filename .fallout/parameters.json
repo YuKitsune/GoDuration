@@ -1,4 +1,4 @@
 {
   "$schema": "build.schema.json",
-  "Solution": "source/ParseTimeSpan.slnx"
+  "Solution": "source/GoDuration.slnx"
 }
