@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GoDuration.SystemTextJson</RootNamespace>
     <AssemblyName>GoDuration.SystemTextJson</AssemblyName>
+    <Description>System.Text.Json TimeSpan converter that reads and writes Go-style duration strings (e.g. "300ms", "1h30m") through the GoDuration parser and formatter.</Description>
+    <PackageTags>go golang duration timespan json system.text.json converter</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

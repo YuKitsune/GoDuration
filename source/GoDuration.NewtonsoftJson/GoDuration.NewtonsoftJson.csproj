@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GoDuration.NewtonsoftJson</RootNamespace>
     <AssemblyName>GoDuration.NewtonsoftJson</AssemblyName>
+    <Description>Newtonsoft.Json TimeSpan converter that reads and writes Go-style duration strings (e.g. "300ms", "1h30m") through the GoDuration parser and formatter.</Description>
+    <PackageTags>go golang duration timespan json newtonsoft json.net converter</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

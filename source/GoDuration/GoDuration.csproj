@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GoDuration</RootNamespace>
     <AssemblyName>GoDuration</AssemblyName>
+    <Description>Parses and formats Go-style duration strings (e.g. "300ms", "-1.5h", "2h45m") to and from System.TimeSpan. Matches the grammar of Go's time.ParseDuration and time.Duration.String.</Description>
+    <PackageTags>go golang duration timespan parse format time</PackageTags>
   </PropertyGroup>
 
 </Project>

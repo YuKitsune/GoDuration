@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>GoDuration.YamlDotNet</RootNamespace>
     <AssemblyName>GoDuration.YamlDotNet</AssemblyName>
+    <Description>YamlDotNet TimeSpan type converter that reads and writes Go-style duration strings (e.g. "300ms", "1h30m") through the GoDuration parser and formatter.</Description>
+    <PackageTags>go golang duration timespan yaml yamldotnet converter</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
