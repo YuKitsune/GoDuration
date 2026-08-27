@@ -26,7 +26,7 @@ public class DurationTests
     [InlineData("1.s", 10_000_000L)] // "1." is a valid number in Go
     [InlineData("2h45m", 99_000_000_000L)]
     [InlineData("1h30m45s", 54_450_000_000L)]
-    [InlineData("30s1m", 36_000_000_000L + 300_000_000L)] // order-independent
+    [InlineData("30s1m", 900_000_000L)] // order-independent (30s + 1m)
     public void Parse_ReturnsExpectedTicks(string input, long expectedTicks)
     {
         var result = Duration.Parse(input);
@@ -45,7 +45,7 @@ public class DurationTests
     [InlineData("1")] // no unit and not bare "0"
     [InlineData("1x")]
     [InlineData("1.5.5s")]
-    [InlineData("1s ")] // trailing garbage
+    [InlineData("1s ")] // trailing whitespace
     [InlineData(" 1s")] // leading whitespace
     [InlineData("1s1")] // dangling number
     [InlineData("1 s")] // space between number and unit

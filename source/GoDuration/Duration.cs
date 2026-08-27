@@ -190,12 +190,14 @@ public static class Duration
 
     // A TimeSpan tick is 100 nanoseconds. Values are kept as double so that
     // fractional units (e.g. "0.5ms") do not lose precision until the final cast.
+    // Multi-char units get .Try() so a partial match (e.g. "ms" against "m45s")
+    // backtracks and lets the shorter alternative be tried.
     private static readonly TextParser<double> UnitTicks =
-        Span.EqualTo("ns").Value(0.01d)
-            .Or(Span.EqualTo("us").Value(10d))
-            .Or(Span.EqualTo("µs").Value(10d)) // µs (U+00B5)
-            .Or(Span.EqualTo("μs").Value(10d)) // μs (U+03BC)
-            .Or(Span.EqualTo("ms").Value(10_000d))
+        Span.EqualTo("ns").Try().Value(0.01d)
+            .Or(Span.EqualTo("us").Try().Value(10d))
+            .Or(Span.EqualTo("µs").Try().Value(10d)) // µs (U+00B5)
+            .Or(Span.EqualTo("μs").Try().Value(10d)) // μs (U+03BC)
+            .Or(Span.EqualTo("ms").Try().Value(10_000d))
             .Or(Span.EqualTo("s").Value(10_000_000d))
             .Or(Span.EqualTo("m").Value(600_000_000d))
             .Or(Span.EqualTo("h").Value(36_000_000_000d));
