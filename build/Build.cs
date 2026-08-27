@@ -2,14 +2,12 @@ using System;
 using System.Linq;
 using Fallout.Common;
 using Fallout.Common.CI.GitHubActions;
-using Fallout.Common.Execution;
 using Fallout.Common.Git;
 using Fallout.Common.IO;
 using Fallout.Common.Tooling;
 using Fallout.Common.Tools.DotNet;
 using Fallout.Common.Utilities.Collections;
 using Fallout.Solutions;
-using static Fallout.Common.EnvironmentInfo;
 using static Fallout.Common.Tools.DotNet.DotNetTasks;
 
 [GitHubActions(
@@ -18,14 +16,6 @@ using static Fallout.Common.Tools.DotNet.DotNetTasks;
     OnPushBranches = new[] { "main" },
     OnPullRequestBranches = new[] { "main" },
     InvokedTargets = new[] { nameof(Test) },
-    FetchDepth = 0)]
-[GitHubActions(
-    "release",
-    GitHubActionsImage.UbuntuLatest,
-    OnPushTags = new[] { "v*" },
-    InvokedTargets = new[] { nameof(Publish) },
-    ImportSecrets = new[] { nameof(NuGetApiKey) },
-    EnableGitHubToken = true,
     FetchDepth = 0)]
 class Build : FalloutBuild
 {
@@ -37,7 +27,7 @@ class Build : FalloutBuild
     [Parameter("NuGet feed URL to push packages to.")]
     readonly string NuGetSource = "https://api.nuget.org/v3/index.json";
 
-    [Parameter("NuGet API key. Set the NUGET_API_KEY secret in CI.")] [Secret]
+    [Parameter("NuGet API key. In CI this is minted per-run by NuGet trusted publishing (NuGet/login).")] [Secret]
     readonly string NuGetApiKey;
 
     [Solution] readonly Solution Solution;
@@ -63,7 +53,7 @@ class Build : FalloutBuild
     {
         var process = ProcessTasks.StartProcess(
                 "dotnet",
-                "minver --verbosity error",
+                "minver --tag-prefix v --verbosity error",
                 RootDirectory,
                 logOutput: false);
         process.AssertZeroExitCode();
