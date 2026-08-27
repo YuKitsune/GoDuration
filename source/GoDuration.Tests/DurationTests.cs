@@ -62,6 +62,27 @@ public class DurationTests
     }
 
     [Theory]
+    [InlineData("", "invalid duration \"\"")]
+    [InlineData("-", "invalid duration \"-\"")]
+    [InlineData("+", "invalid duration \"+\"")]
+    [InlineData(" 1s", "invalid duration \" 1s\"")]
+    [InlineData(".", "invalid duration \".\"")]
+    [InlineData(".s", "invalid duration \".s\"")]
+    [InlineData("-.s", "invalid duration \"-.s\"")]
+    [InlineData("1", "missing unit in duration \"1\"")]
+    [InlineData("1s1", "missing unit in duration \"1s1\"")]
+    [InlineData("1.5.5s", "missing unit in duration \"1.5.5s\"")]
+    [InlineData("1x", "unknown unit \"x\" in duration \"1x\"")]
+    [InlineData("1 s", "unknown unit \" s\" in duration \"1 s\"")]
+    [InlineData("1s ", "unknown unit \"s \" in duration \"1s \"")]
+    [InlineData("24h 30m", "unknown unit \"h \" in duration \"24h 30m\"")]
+    public void Parse_ThrowsWithDescriptiveMessage(string input, string expectedMessage)
+    {
+        var ex = Assert.Throws<FormatException>(() => Duration.Parse(input));
+        Assert.Equal(expectedMessage, ex.Message);
+    }
+
+    [Theory]
     [InlineData("1s", true)]
     [InlineData("garbage", false)]
     [InlineData("", false)]

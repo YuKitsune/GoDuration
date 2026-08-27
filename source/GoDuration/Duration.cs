@@ -14,60 +14,109 @@ public static class Duration
     {
         ArgumentNullException.ThrowIfNull(input);
 
-        if (!TryParse(input, out var result))
-            throw new FormatException($"time: invalid duration \"{input}\"");
+        if (!TryParseCore(input, out var result, out var error))
+            throw new FormatException(error);
 
         return result;
     }
-    
+
     public static bool TryParse(
         [NotNullWhen(true)] string? input,
         out TimeSpan result)
     {
-        result = TimeSpan.Zero;
-        if (string.IsNullOrEmpty(input))
+        if (input is null)
+        {
+            result = TimeSpan.Zero;
             return false;
+        }
 
-        return TryParseSpan(input.AsSpan(), out result);
+        return TryParseCore(input, out result, out _);
     }
 
-    private static bool TryParseSpan(ReadOnlySpan<char> input, out TimeSpan result)
+    private static bool TryParseCore(string input, out TimeSpan result, out string? error)
     {
         result = TimeSpan.Zero;
+        error = null;
 
+        if (input.Length == 0)
+        {
+            error = InvalidDuration(input);
+            return false;
+        }
+
+        var span = input.AsSpan();
         var i = 0;
         var sign = 1;
-        if (input[0] == '+') { i = 1; }
-        else if (input[0] == '-') { sign = -1; i = 1; }
+        if (span[0] == '+') { i = 1; }
+        else if (span[0] == '-') { sign = -1; i = 1; }
 
-        if (i == input.Length)
+        // Bare sign with nothing after it.
+        if (i == span.Length)
+        {
+            error = InvalidDuration(input);
             return false;
+        }
 
         // Go accepts a bare "0" (with no unit) as zero.
-        if (input.Length - i == 1 && input[i] == '0')
+        if (span.Length - i == 1 && span[i] == '0')
             return true;
 
         var totalTicks = 0d;
         var anySegment = false;
-        while (i < input.Length)
+        while (i < span.Length)
         {
-            if (!TryReadNumber(input, ref i, out var number))
+            // Every segment must start with a digit or a dot.
+            if (!IsDigit(span[i]) && span[i] != '.')
+            {
+                error = InvalidDuration(input);
                 return false;
-            if (!TryReadUnit(input, ref i, out var unitTicks))
+            }
+
+            if (!TryReadNumber(span, ref i, out var number))
+            {
+                error = InvalidDuration(input);
                 return false;
+            }
+
+            // Read the unit greedily so a stray character gets quoted in the message.
+            var unitStart = i;
+            while (i < span.Length && !IsDigit(span[i]) && span[i] != '.')
+                i++;
+
+            if (i == unitStart)
+            {
+                error = $"missing unit in duration \"{input}\"";
+                return false;
+            }
+
+            var unit = span[unitStart..i];
+            if (!TryMapUnit(unit, out var unitTicks))
+            {
+                error = $"unknown unit \"{unit}\" in duration \"{input}\"";
+                return false;
+            }
+
             totalTicks += number * unitTicks;
             anySegment = true;
         }
 
         if (!anySegment)
+        {
+            error = InvalidDuration(input);
             return false;
+        }
 
         try
         {
             result = TimeSpan.FromTicks(checked((long)Math.Round(sign * totalTicks)));
             return true;
         }
-        catch (OverflowException) { return false; }
+        catch (OverflowException)
+        {
+            result = TimeSpan.Zero;
+            error = InvalidDuration(input);
+            return false;
+        }
     }
 
     private static bool TryReadNumber(ReadOnlySpan<char> input, ref int i, out double value)
@@ -75,7 +124,7 @@ public static class Duration
         value = 0d;
         var start = i;
 
-        while (i < input.Length && (uint)(input[i] - '0') <= 9)
+        while (i < input.Length && IsDigit(input[i]))
             i++;
         var hasIntegerDigits = i > start;
 
@@ -86,7 +135,7 @@ public static class Duration
             hasDot = true;
             i++;
             fractionStart = i;
-            while (i < input.Length && (uint)(input[i] - '0') <= 9)
+            while (i < input.Length && IsDigit(input[i]))
                 i++;
         }
         var hasFractionDigits = hasDot && i > fractionStart;
@@ -97,38 +146,39 @@ public static class Duration
         return double.TryParse(input[start..i], NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
-    private static bool TryReadUnit(ReadOnlySpan<char> input, ref int i, out double ticksPerUnit)
+    private static bool TryMapUnit(ReadOnlySpan<char> unit, out double ticksPerUnit)
     {
         ticksPerUnit = 0d;
-        var remaining = input.Length - i;
-        if (remaining <= 0)
-            return false;
-
-        if (remaining >= 2)
+        switch (unit.Length)
         {
-            var c0 = input[i];
-            var c1 = input[i + 1];
-            if (c1 == 's')
-            {
-                switch (c0)
+            case 1:
+                switch (unit[0])
                 {
-                    case 'n': ticksPerUnit = 0.01d; i += 2; return true;
-                    case 'u': ticksPerUnit = 10d; i += 2; return true;
-                    case 'µ': ticksPerUnit = 10d; i += 2; return true; // µs
-                    case 'μ': ticksPerUnit = 10d; i += 2; return true; // μs
-                    case 'm': ticksPerUnit = 10_000d; i += 2; return true;
+                    case 's': ticksPerUnit = 10_000_000d; return true;
+                    case 'm': ticksPerUnit = 600_000_000d; return true;
+                    case 'h': ticksPerUnit = 36_000_000_000d; return true;
                 }
-            }
+                break;
+            case 2:
+                if (unit[1] == 's')
+                {
+                    switch (unit[0])
+                    {
+                        case 'n': ticksPerUnit = 0.01d; return true;
+                        case 'u': ticksPerUnit = 10d; return true;
+                        case 'µ': ticksPerUnit = 10d; return true; // U+00B5
+                        case 'μ': ticksPerUnit = 10d; return true; // U+03BC
+                        case 'm': ticksPerUnit = 10_000d; return true;
+                    }
+                }
+                break;
         }
-
-        switch (input[i])
-        {
-            case 's': ticksPerUnit = 10_000_000d; i++; return true;
-            case 'm': ticksPerUnit = 600_000_000d; i++; return true;
-            case 'h': ticksPerUnit = 36_000_000_000d; i++; return true;
-            default: return false;
-        }
+        return false;
     }
+
+    private static string InvalidDuration(string input) => $"invalid duration \"{input}\"";
+
+    private static bool IsDigit(char c) => (uint)(c - '0') <= 9;
 
     /// <summary>
     /// Renders <paramref name="value"/> as a Go-style duration string. With the default
