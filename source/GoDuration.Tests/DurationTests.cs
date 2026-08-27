@@ -78,4 +78,39 @@ public class DurationTests
         Duration.TryParse("nope", out var result);
         Assert.Equal(TimeSpan.Zero, result);
     }
+
+    [Theory]
+    [InlineData(0L, "0s")]
+    [InlineData(1L, "100ns")] // 1 tick == 100 ns
+    [InlineData(9L, "900ns")]
+    [InlineData(10L, "1µs")] // 1 µs == 10 ticks
+    [InlineData(15L, "1.5µs")]
+    [InlineData(10_000L, "1ms")]
+    [InlineData(15_000L, "1.5ms")]
+    [InlineData(3_000_000L, "300ms")]
+    [InlineData(10_000_000L, "1s")]
+    [InlineData(15_000_000L, "1.5s")]
+    [InlineData(600_000_000L, "1m0s")]
+    [InlineData(36_000_000_000L, "1h0m0s")]
+    [InlineData(54_000_000_000L, "1h30m0s")]
+    [InlineData(-54_000_000_000L, "-1h30m0s")]
+    [InlineData(54_450_000_000L, "1h30m45s")]
+    public void Format_MatchesGoStringOutput(long ticks, string expected)
+    {
+        Assert.Equal(expected, Duration.Format(TimeSpan.FromTicks(ticks)));
+    }
+
+    [Theory]
+    [InlineData("300ms")]
+    [InlineData("1.5s")]
+    [InlineData("500µs")]
+    [InlineData("1h30m0s")]
+    [InlineData("-1h30m0s")]
+    [InlineData("100ns")]
+    [InlineData("0s")]
+    public void FormatThenParse_RoundTrips(string formatted)
+    {
+        var parsed = Duration.Parse(formatted);
+        Assert.Equal(formatted, Duration.Format(parsed));
+    }
 }
