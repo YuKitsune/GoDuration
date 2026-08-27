@@ -13,7 +13,7 @@ public enum MicrosecondSymbol : byte
 }
 
 /// <summary>
-/// Format options for <see cref="Duration.Format(TimeSpan, DurationFormatOptions)"/>.
+/// Format options for <see cref="GoDurationWriter.Write(long, DurationFormatOptions)"/>.
 /// The default value produces Go's <c>time.Duration.String()</c> output.
 /// </summary>
 public readonly record struct DurationFormatOptions

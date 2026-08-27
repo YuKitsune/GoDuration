@@ -6,10 +6,8 @@ A C# library that parses Go-style duration strings into `TimeSpan` values, and f
 
 | Package | Purpose |
 | --- | --- |
-| `GoDuration` | Core parser and formatter. |
-| `GoDuration.SystemTextJson` | `TimeSpan` converter for `System.Text.Json`. |
-| `GoDuration.NewtonsoftJson` | `TimeSpan` converter for `Newtonsoft.Json`. |
-| `GoDuration.YamlDotNet` | `TimeSpan` type converter for `YamlDotNet`. |
+| `GoDuration` | Core parser and formatter. Returns `TimeSpan`. |
+| `GoDuration.NodaTime` | Parser and formatter that returns `NodaTime.Duration`. |
 
 All packages target `netstandard2.0`, `net8.0`, and `net10.0`.
 
@@ -24,8 +22,8 @@ dotnet add package GoDuration
 ```csharp
 using GoDuration;
 
-TimeSpan value = Duration.Parse("1h30m45s");
-string text = Duration.Format(value);
+TimeSpan value = GoDurationConverter.Parse("1h30m45s");
+string text = GoDurationConverter.Format(value);
 ```
 
 The parser accepts the same units as Go: `ns`, `us`, `µs`, `μs`, `ms`, `s`, `m`, and `h`.
@@ -42,49 +40,42 @@ var options = new DurationFormatOptions
     MicrosecondSymbol = MicrosecondSymbol.Ascii,
 };
 
-string text = Duration.Format(TimeSpan.FromHours(1), options);
+string text = GoDurationConverter.Format(TimeSpan.FromHours(1), options);
 ```
 
-## Serialization
+## Direct nanosecond access
 
-### System.Text.Json
+Both packages sit on top of `GoDurationReader` and `GoDurationWriter`. Use these when
+you want raw nanosecond counts and no value-type conversion:
 
 ```csharp
-using GoDuration.SystemTextJson;
+using GoDuration;
 
-var options = new JsonSerializerOptions
+if (GoDurationReader.TryRead("1h30m", out long nanoseconds, out _))
 {
-    Converters = { new GoDurationTimeSpanJsonConverter() }
-};
+    string text = GoDurationWriter.Write(nanoseconds);
+}
 ```
 
-See [`GoDuration.SystemTextJson`](https://github.com/YuKitsune/GoDuration/tree/main/source/GoDuration.SystemTextJson).
+## Value range
 
-### Newtonsoft.Json
+The accepted range matches Go's `time.Duration`: signed int64 nanoseconds (about ±292 years).
+`Parse` rejects strings outside this range. `Format` throws `OverflowException` for `TimeSpan`
+values outside this range.
+
+## NodaTime
+
+For `NodaTime.Duration` values, use the `GoDuration.NodaTime` package:
 
 ```csharp
-using GoDuration.NewtonsoftJson;
+using GoDuration.NodaTime;
+using NodaTime;
 
-var settings = new JsonSerializerSettings
-{
-    Converters = { new GoDurationTimeSpanJsonConverter() }
-};
+Duration value = GoDurationConverter.Parse("1h30m45s");
+string text = GoDurationConverter.Format(value);
 ```
 
-See [`GoDuration.NewtonsoftJson`](https://github.com/YuKitsune/GoDuration/tree/main/source/GoDuration.NewtonsoftJson).
-
-### YamlDotNet
-
-```csharp
-using GoDuration.YamlDotNet;
-using YamlDotNet.Serialization;
-
-var serializer = new SerializerBuilder()
-    .WithTypeConverter(new GoDurationTimeSpanYamlTypeConverter())
-    .Build();
-```
-
-See [`GoDuration.YamlDotNet`](https://github.com/YuKitsune/GoDuration/tree/main/source/GoDuration.YamlDotNet).
+See [`GoDuration.NodaTime`](https://github.com/YuKitsune/GoDuration/tree/main/source/GoDuration.NodaTime).
 
 ## Build
 

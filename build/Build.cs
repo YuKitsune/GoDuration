@@ -37,9 +37,7 @@ class Build : FalloutBuild
     static readonly string[] PackableProjectNames =
     {
         "GoDuration",
-        "GoDuration.SystemTextJson",
-        "GoDuration.NewtonsoftJson",
-        "GoDuration.YamlDotNet",
+        "GoDuration.NodaTime",
     };
 
     static readonly string[] PackageTargetFrameworks =

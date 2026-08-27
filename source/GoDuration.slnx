@@ -1,12 +1,8 @@
 <Solution>
   <Project Path="GoDuration/GoDuration.csproj" />
   <Project Path="GoDuration.Tests/GoDuration.Tests.csproj" />
-  <Project Path="GoDuration.SystemTextJson/GoDuration.SystemTextJson.csproj" />
-  <Project Path="GoDuration.SystemTextJson.Tests/GoDuration.SystemTextJson.Tests.csproj" />
-  <Project Path="GoDuration.NewtonsoftJson/GoDuration.NewtonsoftJson.csproj" />
-  <Project Path="GoDuration.NewtonsoftJson.Tests/GoDuration.NewtonsoftJson.Tests.csproj" />
-  <Project Path="GoDuration.YamlDotNet/GoDuration.YamlDotNet.csproj" />
-  <Project Path="GoDuration.YamlDotNet.Tests/GoDuration.YamlDotNet.Tests.csproj" />
+  <Project Path="GoDuration.NodaTime/GoDuration.NodaTime.csproj" />
+  <Project Path="GoDuration.NodaTime.Tests/GoDuration.NodaTime.Tests.csproj" />
   <Project Path="../build/_build.csproj">
     <Build Project="false" />
   </Project>

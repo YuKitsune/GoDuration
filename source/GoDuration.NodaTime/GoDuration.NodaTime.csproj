@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GoDuration.NodaTime</RootNamespace>
+    <AssemblyName>GoDuration.NodaTime</AssemblyName>
+    <Description>Parses and formats Go-style duration strings (e.g. "300ms", "-1.5h", "2h45m") to and from NodaTime.Duration through the GoDuration parser and formatter.</Description>
+    <PackageTags>go golang duration nodatime parse format time</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net10.0'">
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <!--
+    NodaTime is pinned to the lowest version that supports netstandard2.0, so consumers can float
+    up to any newer NodaTime without a floor conflict.
+  -->
+  <ItemGroup>
+    <PackageReference Include="NodaTime" Version="3.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GoDuration\GoDuration.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
