@@ -4,10 +4,10 @@ using System.Text.Json.Serialization;
 namespace GoDuration.SystemTextJson;
 
 /// <summary>
-/// System.Text.Json converter that reads and writes <see cref="TimeSpan"/> values
-/// as Go-style duration strings. Only JSON string tokens are accepted on read.
-/// The <see cref="DurationFormatOptions"/> passed to the constructor control the
-/// write-side formatting; parsing is single-mode.
+/// System.Text.Json converter that reads and writes <see cref="TimeSpan"/> values as Go-style
+/// duration strings. On read, only JSON string tokens are accepted. On write, the
+/// <see cref="DurationFormatOptions"/> value that is passed to the constructor controls the
+/// output. The read behaviour is fixed.
 /// </summary>
 public sealed class GoDurationTimeSpanJsonConverter : JsonConverter<TimeSpan>
 {
