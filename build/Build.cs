@@ -132,18 +132,38 @@ class Build : FalloutBuild
         });
 
     Target BundleZip => _ => _
-        .DependsOn(Pack)
+        .DependsOn(Test)
         .Produces(ReleaseDirectory / "*.zip")
         .Executes(() =>
         {
+            var required = new[]
+            {
+                RootDirectory / "LICENSE",
+                RootDirectory / "README.md",
+                RootDirectory / "CHANGELOG.md",
+            };
+            var missing = required.Where(p => !p.FileExists()).ToArray();
+            if (missing.Length > 0)
+                throw new InvalidOperationException(
+                    $"BundleZip needs these files at the repository root: {string.Join(", ", missing.Select(p => p.Name))}.");
+
             ReleaseDirectory.CreateOrCleanDirectory();
             var stage = ReleaseDirectory / "stage";
             stage.CreateOrCleanDirectory();
 
-            (RootDirectory / "LICENSE").CopyToDirectory(stage);
-            (RootDirectory / "README.md").CopyToDirectory(stage);
-            (RootDirectory / "CHANGELOG.md").CopyToDirectory(stage);
-            PackagesDirectory.GlobFiles("*.nupkg", "*.snupkg").ForEach(x => x.CopyToDirectory(stage));
+            foreach (var file in required)
+                file.CopyToDirectory(stage);
+
+            foreach (var name in PackableProjectNames)
+            {
+                var project = Solution.GetProject(name);
+                var output = stage / name;
+                DotNetPublish(s => s
+                    .SetProject(project)
+                    .SetConfiguration(Configuration)
+                    .SetOutput(output)
+                    .EnableNoRestore());
+            }
 
             var zipPath = ReleaseDirectory / $"GoDuration-{PackageVersion}.zip";
             stage.ZipTo(zipPath);
